@@ -2,3 +2,4 @@ fastapi
 uvicorn
 pydantic
 tortoise-orm
+passlib[bcrypt]

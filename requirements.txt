@@ -3,3 +3,5 @@ uvicorn
 pydantic
 tortoise-orm
 passlib[bcrypt]
+fastapi-mail
+python-dotenv

@@ -53,3 +53,13 @@ async def send_email(email: EmailSchema, instance: User):
     
         </html>    
     """
+
+    message = MessageSchema(
+        subject= "Account Verification",
+        recipienrs= email,
+        body= template,
+        subtype= "html"
+    )
+
+    fm = FastMail(conf)
+    await fm.send_message(message= message)

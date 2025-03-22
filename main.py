@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status, HTTPException
 from tortoise.contrib.fastapi import register_tortoise
 from models import *
 from authentication import *
@@ -7,6 +7,12 @@ from authentication import *
 from tortoise.signals import post_save
 from typing import List, Type, Optional
 from tortoise import BaseDBAsyncClient
+
+#response classes
+from fastapi.responses import HTMLResponse
+
+#templates
+from fastapi.templating import Jinja2Templates
 
 app = FastAPI()
 
@@ -36,6 +42,22 @@ async def register(user: user_pydanticIn):
         "data": f"Hello {new_user.username}. Please check your email to confirm your email."
     }
 
+templates= Jinja2Templates(directory= "templates")
+@app.get('/verification')
+async def email_verification(request: Request, token: str):
+    user = await veri_token(token)
+
+    if user and not user.is_verified:
+        user.is_verified = True
+        await user.save()
+        return templates.TemplateResponse("verification.html",
+                                          {"request": request, "username": user.username})
+    
+    raise HTTPException(
+            status_code= status.HTTP_401_UNAUTHORIZED,
+            detail= "Invalid token or expired token",
+            headers= {"WWW-Authenticate": "Bearer"}
+        )
 
 @app.get('/')
 def index():

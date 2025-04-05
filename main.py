@@ -2,12 +2,13 @@ from fastapi import FastAPI, Request, status, HTTPException
 from tortoise.contrib.fastapi import register_tortoise
 from models import *
 from authentication import *
+from tortoise.exceptions import IntegrityError
 
 #signals
 from tortoise.signals import post_save
 from typing import List, Type, Optional
 from tortoise import BaseDBAsyncClient
-
+from mail import *
 #response classes
 from fastapi.responses import HTMLResponse
 
@@ -30,17 +31,37 @@ async def create_busuness(
         )
         await business_pydantic.from_tortoise_orm(business_obj)
         #send the email
+        await send_email([instance.email], instance)
 
 @app.post('/registration')
 async def register(user: user_pydanticIn):
-    user_info = user.dict(exclude_unset = True)
+    user_info = user.dict(exclude_unset=True)
     user_info["password"] = get_hashed_password(user_info["password"])
-    user_obj = await User.create(**user_info)
+
+    try:
+        user_obj = await User.create(**user_info)
+    except IntegrityError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered."
+        )
+
     new_user = await user_pydantic.from_tortoise_orm(user_obj)
     return {
         "status": "ok",
         "data": f"Hello {new_user.username}. Please check your email to confirm your email."
     }
+
+# @app.post('/registration')
+# async def register(user: user_pydanticIn):
+#     user_info = user.dict(exclude_unset = True)
+#     user_info["password"] = get_hashed_password(user_info["password"])
+#     user_obj = await User.create(**user_info)
+#     new_user = await user_pydantic.from_tortoise_orm(user_obj)
+#     return {
+#         "status": "ok",
+#         "data": f"Hello {new_user.username}. Please check your email to confirm your email."
+#     }
 
 templates= Jinja2Templates(directory= "templates")
 @app.get('/verification')

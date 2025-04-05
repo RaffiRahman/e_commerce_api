@@ -16,7 +16,7 @@ def get_hashed_password(password: str):
 
 async def veri_token(token: str):
     try:
-        payload = jwt.decode(token, config_credentials["SECRET"])
+        payload = jwt.decode(token, config_credentials["SECRET"], algorithms=['HS256'])
         user = await User.get(id= payload.get("id"))
 
     except:
